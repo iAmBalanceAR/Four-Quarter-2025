@@ -1,0 +1,24 @@
+services:
+  supabase:
+    container_name: supabase-local
+    image: supabase/supabase-dev:latest
+    ports:
+      - "54321:54321" # API. Accessible at http://localhost:54321
+      - "54322:54322" # Studio. Accessible at http://localhost:54322
+    # volumes:
+    #   - ./supabase-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      STUDIO_DEFAULT_ORGANIZATION: Four Quarter Bar
+      STUDIO_DEFAULT_PROJECT: Four Quarter Bar Local
+      API_EXTERNAL_URL: http://localhost:54321
+      STUDIO_PORT: 54322
+      REST_PORT: 54321
+      KONG_HTTP_PORT: 54321
+      KONG_HTTPS_PORT: 54321
+      SUPABASE_URL: http://localhost:54321
+      SUPABASE_REST_URL: http://localhost:54321/rest/v1/
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU 
