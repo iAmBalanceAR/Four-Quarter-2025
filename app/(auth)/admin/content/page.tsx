@@ -1,16 +1,16 @@
+"use client"
+
 import { Metadata } from "next"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { FileText, Home, Info, Calendar, MessageSquare, Save, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-export const metadata: Metadata = {
-  title: "Content Management | Four Quarter Bar",
-  description: "Manage website content for Four Quarter Bar",
-}
+import { useToast } from "@/components/ui/use-toast"
+import dynamic from 'next/dynamic'
+import 'react-quill/dist/quill.snow.css'
 
 // Mock content data for About page
 const aboutContent = {
@@ -34,19 +34,174 @@ const aboutContent = {
   hours: "Mon-Thu: 4pm-12am • Fri-Sat: 4pm-2am • Sun: 4pm-10pm",
 }
 
+type ContentPageData = {
+  seo_title: string
+  seo_description: string
+  main_content: string
+  images: {
+    main?: string
+    additional?: string[]
+  }
+}
+
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
+
 export default function ContentAdminPage() {
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [content, setContent] = useState<ContentPageData>({
+    seo_title: "",
+    seo_description: "",
+    main_content: "",
+    images: {}
+  })
+  const [originalContent, setOriginalContent] = useState<ContentPageData | null>(null)
+  const [uploading, setUploading] = useState<{ [key: string]: boolean }>({})
+
+  useEffect(() => {
+    fetchContent()
+  }, [])
+
+  async function fetchContent() {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/admin/content?slug=about')
+      if (!response.ok) throw new Error('Failed to fetch content')
+      const data = await response.json()
+      setContent(data || {
+        seo_title: "",
+        seo_description: "",
+        main_content: "",
+        images: {}
+      })
+      setOriginalContent(data)
+    } catch (error) {
+      console.error('Error fetching content:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load page content. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSave() {
+    try {
+      setSaving(true)
+      const response = await fetch('/api/admin/content?slug=about', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(content),
+      })
+      
+      if (!response.ok) throw new Error('Failed to save content')
+      
+      const savedData = await response.json()
+      setContent(savedData)
+      setOriginalContent(savedData)
+      
+      toast({
+        title: "Success",
+        description: "Content saved successfully!",
+      })
+    } catch (error) {
+      console.error('Error saving content:', error)
+      toast({
+        title: "Error",
+        description: "Failed to save changes. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function handleReset() {
+    if (originalContent) {
+      setContent(originalContent)
+      toast({
+        description: "Changes reset to last saved version.",
+      })
+    }
+  }
+
+  function handleContentChange(field: keyof ContentPageData, value: string) {
+    setContent(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>, slot: 'main' | number) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading((prev) => ({ ...prev, [slot]: true }))
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      // Use /api/upload for local file uploads (like events section)
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
+      const data = await response.json()
+      const url = data.url
+      console.log('Uploaded image URL:', url)
+      setContent((prev) => {
+        if (slot === 'main') {
+          return { ...prev, images: { ...prev.images, main: url } }
+        } else {
+          const additional = prev.images.additional ? [...prev.images.additional] : []
+          additional[Number(slot)] = url
+          return { ...prev, images: { ...prev.images, additional } }
+        }
+      })
+      toast({ title: 'Image Uploaded', description: 'Image uploaded successfully.' })
+    } catch (error: any) {
+      toast({ title: 'Upload Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setUploading((prev) => ({ ...prev, [slot]: false }))
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="text-lg text-muted-foreground">Loading content...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-3xl font-bold">Content Management</h1>
         <div className="flex gap-2">
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handleReset}
+            disabled={saving}
+          >
             <RefreshCw className="h-4 w-4" />
             <span>Reset Changes</span>
           </Button>
-          <Button className="flex items-center gap-2">
+          <Button 
+            className="flex items-center gap-2"
+            onClick={handleSave}
+            disabled={saving}
+          >
             <Save className="h-4 w-4" />
-            <span>Save All Changes</span>
+            <span>{saving ? "Saving..." : "Save All Changes"}</span>
           </Button>
         </div>
       </div>
@@ -60,6 +215,7 @@ export default function ContentAdminPage() {
               <span>About Page</span>
             </div>
           </Button>
+          {/*
           <Button variant="ghost" className="w-full justify-start">
             <div className="flex items-center gap-2">
               <Home className="h-4 w-4" />
@@ -78,13 +234,13 @@ export default function ContentAdminPage() {
               <span>Contact Page</span>
             </div>
           </Button>
+          */}
         </div>
         
         {/* Content editing area */}
         <div className="rounded-xl bg-card p-6 shadow-md">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-bold">About Page Content</h2>
-            <Button size="sm">Save Changes</Button>
           </div>
           
           <div className="space-y-6">
@@ -95,7 +251,8 @@ export default function ContentAdminPage() {
                 <Label htmlFor="title">Page Title</Label>
                 <Input 
                   id="title" 
-                  defaultValue={aboutContent.title} 
+                  value={content.seo_title} 
+                  onChange={(e) => handleContentChange('seo_title', e.target.value)}
                   className="max-w-lg" 
                 />
               </div>
@@ -103,7 +260,8 @@ export default function ContentAdminPage() {
                 <Label htmlFor="description">Meta Description</Label>
                 <Textarea 
                   id="description" 
-                  defaultValue={aboutContent.description} 
+                  value={content.seo_description} 
+                  onChange={(e) => handleContentChange('seo_description', e.target.value)}
                   className="max-w-lg" 
                   rows={3} 
                 />
@@ -115,45 +273,14 @@ export default function ContentAdminPage() {
             
             {/* Main Content Section */}
             <div className="space-y-4">
-              <h3 className="font-medium">Main Content</h3>
-              <div className="space-y-2">
-                <Label htmlFor="mainContent">About Text</Label>
-                <Textarea 
-                  id="mainContent" 
-                  defaultValue={aboutContent.mainContent} 
-                  rows={6} 
+              <h3 className="font-medium">Page Content</h3>
+              <div>
+                <ReactQuill
+                  value={content.main_content}
+                  onChange={val => handleContentChange('main_content', val)}
+                  className="bg-background"
+                  theme="snow"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mission">Mission Statement</Label>
-                <Textarea 
-                  id="mission" 
-                  defaultValue={aboutContent.mission} 
-                  rows={4} 
-                />
-              </div>
-            </div>
-            
-            {/* Contact Information Section */}
-            <div className="space-y-4">
-              <h3 className="font-medium">Contact Information</h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input id="address" defaultValue={aboutContent.address} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" defaultValue={aboutContent.phone} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" defaultValue={aboutContent.email} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hours">Hours</Label>
-                  <Input id="hours" defaultValue={aboutContent.hours} />
-                </div>
               </div>
             </div>
             
@@ -164,34 +291,38 @@ export default function ContentAdminPage() {
                 <div className="space-y-2">
                   <Label htmlFor="mainImage">Main Image</Label>
                   <div className="aspect-video overflow-hidden rounded-md bg-muted">
-                    <div className="flex h-full w-full items-center justify-center">
-                      <FileText className="h-8 w-8 text-muted-foreground/70" />
-                    </div>
+                    {content.images?.main ? (
+                      <img 
+                        src={content.images.main} 
+                        alt="Main" 
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://placehold.co/600x400?text=No+Image';
+                          console.error('Failed to load main image:', content.images.main)
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <FileText className="h-8 w-8 text-muted-foreground/70" />
+                      </div>
+                    )}
                   </div>
-                  <Button size="sm" variant="outline" className="w-full">
-                    Change Image
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="image2">Additional Image 1</Label>
-                  <div className="aspect-video overflow-hidden rounded-md bg-muted">
-                    <div className="flex h-full w-full items-center justify-center">
-                      <FileText className="h-8 w-8 text-muted-foreground/70" />
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" className="w-full">
-                    Change Image
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="image3">Additional Image 2</Label>
-                  <div className="aspect-video overflow-hidden rounded-md bg-muted">
-                    <div className="flex h-full w-full items-center justify-center">
-                      <FileText className="h-8 w-8 text-muted-foreground/70" />
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" className="w-full">
-                    Change Image
+                  <input
+                    type="file"
+                    id="mainImageInput"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e, 'main')}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => document.getElementById('mainImageInput')?.click()}
+                    disabled={uploading['main']}
+                    aria-label="Change main image"
+                  >
+                    {uploading['main'] ? 'Uploading...' : 'Change Image'}
                   </Button>
                 </div>
               </div>

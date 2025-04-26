@@ -28,7 +28,9 @@ CREATE TABLE public.events (
     category TEXT,
     price DECIMAL(10, 2),
     url TEXT,
-    artist_id UUID REFERENCES public.artists(id) ON DELETE SET NULL
+    artist_id UUID REFERENCES public.artists(id) ON DELETE SET NULL,
+    status TEXT DEFAULT 'draft',
+    notes TEXT
 );
 
 -- Create profiles table (extends auth.users)
@@ -47,22 +49,31 @@ ALTER TABLE public.artists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Artist policies
-CREATE POLICY "Allow public read access for artists" ON public.artists
-    FOR SELECT USING (true);
-
-CREATE POLICY "Allow authenticated users to create artists" ON public.artists
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-CREATE POLICY "Allow admin users to update artists" ON public.artists
-    FOR UPDATE USING (
+-- Create basic policies for profiles
+CREATE POLICY "profiles_select" ON public.profiles
+    FOR SELECT USING (
+        auth.uid() = id OR 
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid() AND profiles.is_admin = true
         )
     );
 
-CREATE POLICY "Allow admin users to delete artists" ON public.artists
+CREATE POLICY "profiles_update" ON public.profiles
+    FOR UPDATE USING (
+        auth.uid() = id OR 
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid() AND profiles.is_admin = true
+        )
+    );
+
+CREATE POLICY "profiles_insert" ON public.profiles
+    FOR INSERT WITH CHECK (
+        auth.uid() = id
+    );
+
+CREATE POLICY "profiles_delete" ON public.profiles
     FOR DELETE USING (
         EXISTS (
             SELECT 1 FROM public.profiles
@@ -70,11 +81,11 @@ CREATE POLICY "Allow admin users to delete artists" ON public.artists
         )
     );
 
--- Events policies
-CREATE POLICY "Allow public read access for events" ON public.events
+-- Create basic policies for events
+CREATE POLICY "events_select" ON public.events
     FOR SELECT USING (true);
 
-CREATE POLICY "Allow admin users to insert events" ON public.events
+CREATE POLICY "events_insert" ON public.events
     FOR INSERT WITH CHECK (
         EXISTS (
             SELECT 1 FROM public.profiles
@@ -82,7 +93,7 @@ CREATE POLICY "Allow admin users to insert events" ON public.events
         )
     );
 
-CREATE POLICY "Allow admin users to update events" ON public.events
+CREATE POLICY "events_update" ON public.events
     FOR UPDATE USING (
         EXISTS (
             SELECT 1 FROM public.profiles
@@ -90,7 +101,7 @@ CREATE POLICY "Allow admin users to update events" ON public.events
         )
     );
 
-CREATE POLICY "Allow admin users to delete events" ON public.events
+CREATE POLICY "events_delete" ON public.events
     FOR DELETE USING (
         EXISTS (
             SELECT 1 FROM public.profiles
@@ -98,23 +109,25 @@ CREATE POLICY "Allow admin users to delete events" ON public.events
         )
     );
 
--- Profiles policies
-CREATE POLICY "Allow users to view their own profile" ON public.profiles
-    FOR SELECT USING (auth.uid() = id);
+-- Create basic policies for artists
+CREATE POLICY "artists_select" ON public.artists
+    FOR SELECT USING (true);
 
-CREATE POLICY "Allow admin users to view all profiles" ON public.profiles
-    FOR SELECT USING (
+CREATE POLICY "artists_insert" ON public.artists
+    FOR INSERT WITH CHECK (
+        auth.role() = 'authenticated'
+    );
+
+CREATE POLICY "artists_update" ON public.artists
+    FOR UPDATE USING (
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid() AND profiles.is_admin = true
         )
     );
 
-CREATE POLICY "Allow users to update their own profile" ON public.profiles
-    FOR UPDATE USING (auth.uid() = id);
-
-CREATE POLICY "Allow admin users to update all profiles" ON public.profiles
-    FOR UPDATE USING (
+CREATE POLICY "artists_delete" ON public.artists
+    FOR DELETE USING (
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid() AND profiles.is_admin = true
@@ -132,16 +145,19 @@ $$ LANGUAGE plpgsql;
 
 -- Add triggers for updated_at columns
 CREATE TRIGGER set_updated_at_artists
-BEFORE UPDATE ON public.artists
-FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+    BEFORE UPDATE ON public.artists
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
 
 CREATE TRIGGER set_updated_at_events
-BEFORE UPDATE ON public.events
-FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+    BEFORE UPDATE ON public.events
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
 
 CREATE TRIGGER set_updated_at_profiles
-BEFORE UPDATE ON public.profiles
-FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+    BEFORE UPDATE ON public.profiles
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
 
 -- Create trigger function to create a profile record when a new user signs up
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -155,5 +171,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Add trigger for creating profile on signup
 CREATE TRIGGER on_auth_user_created
-AFTER INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION public.handle_new_user(); 
+    AFTER INSERT ON auth.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_new_user(); 

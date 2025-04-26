@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Menu, X, Music, Calendar } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { usePathname } from 'next/navigation'
 
 const routes = [
   {
@@ -31,6 +32,7 @@ const routes = [
 
 export function MainNav() {
   const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname()
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
@@ -49,15 +51,21 @@ export function MainNav() {
 
       {/* Desktop Navigation */}
       <div className="hidden md:flex md:items-center md:space-x-8">
-        {routes.map((route) => (
-          <Link
-            key={route.href}
-            href={route.href}
-            className="text-sm font-medium text-foreground/80 transition-colors hover:text-secondary"
-          >
-            {route.label}
-          </Link>
-        ))}
+        {routes.map((route) => {
+          const isActive = pathname === route.href || (route.href !== '/' && pathname.startsWith(route.href))
+          return (
+            <Link
+              key={route.href}
+              href={route.href}
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-secondary",
+                isActive ? "text-secondary font-bold underline underline-offset-4" : "text-foreground/80"
+              )}
+            >
+              {route.label}
+            </Link>
+          )
+        })}
       </div>
 
       {/* Mobile Navigation Button */}
@@ -81,17 +89,23 @@ export function MainNav() {
         )}
       >
         <div className="flex flex-col space-y-4 px-6 py-8">
-          {routes.map((route) => (
-            <Link
-              key={route.href}
-              href={route.href}
-              className="flex items-center space-x-2 border-b border-muted pb-2 text-base font-medium text-foreground/80 transition-colors hover:text-secondary"
-              onClick={() => setIsOpen(false)}
-            >
-              {route.icon && <span>{route.icon}</span>}
-              <span>{route.label}</span>
-            </Link>
-          ))}
+          {routes.map((route) => {
+            const isActive = pathname === route.href || (route.href !== '/' && pathname.startsWith(route.href))
+            return (
+              <Link
+                key={route.href}
+                href={route.href}
+                className={cn(
+                  "flex items-center space-x-2 border-b border-muted pb-2 text-base font-medium transition-colors hover:text-secondary",
+                  isActive ? "text-secondary font-bold underline underline-offset-4" : "text-foreground/80"
+                )}
+                onClick={() => setIsOpen(false)}
+              >
+                {route.icon && <span>{route.icon}</span>}
+                <span>{route.label}</span>
+              </Link>
+            )
+          })}
         </div>
       </div>
     </nav>

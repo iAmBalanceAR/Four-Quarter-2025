@@ -24,14 +24,14 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
       isFeatured ? "lg:flex" : ""
     }`}>
       <div className={`relative overflow-hidden bg-muted ${
-        isFeatured ? "lg:h-auto lg:w-2/5" : "h-48 w-full"
+        isFeatured ? "lg:h-auto lg:w-2/5 min-h-[300px]" : "h-48 w-full min-h-[200px]"
       }`}>
         {event.coverImage ? (
           <Image
             src={event.coverImage}
             alt={event.title}
             fill
-            className="rounded-sm object-cover transition-transform duration-500 group-hover:scale-105"
+            className="rounded-sm object-cover object-top-left transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center rounded-sm bg-muted">

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { getEvents, createEvent, updateEvent, deleteEvent, fallbackCreateEvent } from "@/lib/supabase/api"
-import { adminCreateEvent, adminUpdateEvent, adminDeleteEvent } from "@/lib/supabase/admin"
+import { adminCreateEvent, adminUpdateEvent, adminDeleteEvent, uploadImageToStorage } from "@/lib/supabase/admin"
 import { formatDate, formatTime } from "@/lib/utils"
 import { Database } from "@/types/database.types"
 import { Tables } from "@/types/database.types"
@@ -116,13 +116,22 @@ export default function EventsAdminPage() {
 
     setUploadingImage(true)
     try {
-      // Simulate image upload - in a real app, you would upload to a storage service like Supabase Storage
-      // This is just a mock implementation
-      await new Promise(resolve => setTimeout(resolve, 1000)) // simulate network request
+      const formData = new FormData();
+      formData.append('file', newEvent.imageFile);
       
-      // Create a fake URL for demo purposes
-      const imageUrl = URL.createObjectURL(newEvent.imageFile)
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
       
+      if (!response.ok) {
+        throw new Error(`Upload failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const imageUrl = data.url;
+      console.log('Image uploaded to:', imageUrl)
+
       toast({
         title: "Success",
         description: "Image uploaded successfully!"
@@ -131,19 +140,19 @@ export default function EventsAdminPage() {
       setNewEvent(prev => ({
         ...prev,
         image_url: imageUrl
-      }))
+      }));
       
-      return imageUrl
+      return imageUrl;
     } catch (error) {
-      console.error("Error uploading image:", error)
+      console.error("Error handling image upload:", error);
       toast({
         title: "Error",
         description: "Failed to upload image. Please try again.",
         variant: "error"
-      })
-      return null
+      });
+      return null;
     } finally {
-      setUploadingImage(false)
+      setUploadingImage(false);
     }
   }
 
@@ -309,11 +318,11 @@ export default function EventsAdminPage() {
     // Filter by status (published/draft/incomplete)
     let matchesStatus = true;
     if (statusFilter === "published") {
-      matchesStatus = event.status === "published";
+      matchesStatus = getEventStatus(event) === "published";
     } else if (statusFilter === "draft") {
-      matchesStatus = event.status === "draft";
+      matchesStatus = getEventStatus(event) === "draft";
     } else if (statusFilter === "incomplete") {
-      matchesStatus = event.status === "incomplete";
+      matchesStatus = getEventStatus(event) === "incomplete";
     }
 
     return matchesSearch && matchesStatus;

@@ -18,87 +18,93 @@ export function createAdminClient() {
   )
 }
 
+// Upload image to Supabase Storage
+export async function uploadImageToStorage(file: File, path: string = 'events') {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('path', path);
+
+    const response = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.url;
+  } catch (error) {
+    console.error('Error in uploadImageToStorage:', error);
+    throw error;
+  }
+}
+
 // Admin Event Services
 export async function adminCreateEvent(event: any) {
-  const supabase = createAdminClient()
-  
   try {
-    const { data, error } = await supabase
-      .from('events')
-      .insert(event)
-      .select('*')
-      .single()
-    
-    if (error) {
-      console.error('Error creating event (admin):', error)
-      throw error
+    const response = await fetch('/api/admin/events', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(event),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create event');
     }
-    
-    return data
+
+    return await response.json();
   } catch (error) {
-    console.error('Error creating event (admin):', error)
-    throw error
+    console.error('Error creating event (admin):', error);
+    throw error;
   }
 }
 
 export async function adminUpdateEvent(id: string, event: any) {
-  const supabase = createAdminClient()
-  
   try {
-    // First, check if the event exists
-    const { data: existingEvent, error: checkError } = await supabase
-      .from('events')
-      .select('id')
-      .eq('id', id);
-      
-    if (checkError) {
-      console.error(`Error checking for event with id ${id}:`, checkError);
-      throw checkError;
+    const response = await fetch('/api/admin/events', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id, ...event }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update event');
     }
-    
-    if (!existingEvent || existingEvent.length === 0) {
-      const notFoundError = new Error(`Event with id ${id} not found`);
-      console.error(notFoundError);
-      throw notFoundError;
-    }
-    
-    // If the event exists, proceed with the update
-    const { data, error } = await supabase
-      .from('events')
-      .update(event)
-      .eq('id', id)
-      .select('*');
-    
-    if (error) {
-      console.error(`Error updating event with id ${id} (admin):`, error);
-      throw error;
-    }
-    
-    if (!data || data.length === 0) {
-      const updateError = new Error(`Event was found but update returned no data. This may be an RLS issue.`);
-      console.error(updateError);
-      throw updateError;
-    }
-    
-    return data[0]; // Return the first item rather than using .single()
+
+    return await response.json();
   } catch (error) {
-    console.error(`Error in adminUpdateEvent:`, error);
+    console.error('Error updating event (admin):', error);
     throw error;
   }
 }
 
 export async function adminDeleteEvent(id: string) {
-  const supabase = createAdminClient()
-  
-  const { error } = await supabase
-    .from('events')
-    .delete()
-    .eq('id', id)
-  
-  if (error) {
-    console.error(`Error deleting event with id ${id} (admin):`, error)
-    throw error
+  try {
+    const response = await fetch('/api/admin/events', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to delete event');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting event (admin):', error);
+    throw error;
   }
-  
-  return true
 } 

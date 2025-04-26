@@ -7,6 +7,9 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SiteNav } from "@/components/navigation/site-nav"
 import { Toaster } from "@/components/ui/toaster"
 import { NotificationProvider } from "@/components/ui/notification-context"
+import { MapPin, Phone, Mail, Clock } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 const inter = Inter({ 
   subsets: ["latin"],
