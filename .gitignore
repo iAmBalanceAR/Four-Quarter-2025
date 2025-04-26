@@ -48,3 +48,9 @@ next-env.d.ts
 
 # Cursor
 .cursor
+
+# Ignore all uploaded/content images
+/public/images/*
+!/public/images/.gitkeep
+/public/uploads/*
+!/public/uploads/.gitkeep
