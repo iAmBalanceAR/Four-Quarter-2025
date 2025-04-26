@@ -11,7 +11,7 @@ export function HeroSection() {
       
       {/* High-quality hero image from Unsplash */}
       <Image 
-        src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=2070&auto=format&fit=crop" 
+        src="/images/hero-band.jpg" 
         alt="Live music at Four Quarter Bar"
         fill
         priority
@@ -20,10 +20,11 @@ export function HeroSection() {
       
       <div className="container relative z-10 mx-auto px-4 text-center">
         <h1 className="mb-6 text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
-          Experience <span className="text-secondary">Live Music</span> Like Never Before
+        
+          Four <span className="text-secondary">Quarter</span> Bar
         </h1>
         <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-200">
-          Four Quarter Bar is Little Rock's premier destination for live music, cold drinks, and unforgettable nights.
+        Best Bar, Best Bar Food, and Best Bloody Mary in Arkansas.
         </p>
         <div className="flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
           <Button asChild size="lg" className="min-w-[150px]">
