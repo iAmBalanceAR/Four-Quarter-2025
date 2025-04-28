@@ -26,8 +26,8 @@ function mapDbEventToEvent(dbEvent: Tables<'events'>): Event {
     performerDescription: dbEvent.notes || undefined,
     ticketUrl: dbEvent.url || undefined,
     socialShareEnabled: false,
-    createdAt: dbEvent.created_at,
-    updatedAt: dbEvent.updated_at,
+    createdAt: dbEvent.created_at || undefined,
+    updatedAt: dbEvent.updated_at || undefined,
     slug: dbEvent.id, // Using id as slug for now
   }
 }

@@ -19,7 +19,6 @@ export function Toaster() {
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         const IconComponent = props.variant ? getIconForVariant(props.variant) : null;
-        
         return (
           <Toast key={id} {...props}>
             <div className="flex gap-3">

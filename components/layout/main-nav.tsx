@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, X, Music, Calendar } from 'lucide-react'
+import { Menu as MenuIcon, X, Music, Calendar, Utensils, Info, Mail } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { usePathname } from 'next/navigation'
@@ -19,14 +19,19 @@ const routes = [
     icon: <Calendar className="h-5 w-5" />
   },
   {
+    href: '/menu',
+    label: 'Menu',
+    icon: <Utensils className="h-5 w-5" />
+  },
+  {
     href: '/about',
     label: 'About',
-    icon: null
+    icon: <Info className="h-5 w-5" />
   },
   {
     href: '/contact',
     label: 'Contact',
-    icon: null
+    icon: <Mail className="h-5 w-5" />
   }
 ]
 
@@ -58,11 +63,12 @@ export function MainNav() {
               key={route.href}
               href={route.href}
               className={cn(
-                "text-sm font-medium transition-colors hover:text-secondary",
-                isActive ? "text-secondary font-bold underline underline-offset-4" : "text-foreground/80"
+                "flex items-center gap-2 text-sm font-medium transition-colors hover:text-[#FFA726] hover:underline hover:underline-offset-4 focus:text-[#FFA726]  active:text-[#FFA726]",
+                isActive ? "text-[#FFA726] font-bold u" : "text-foreground/80"
               )}
             >
-              {route.label}
+              {route.icon && <span>{route.icon}</span>}
+              <span>{route.label}</span>
             </Link>
           )
         })}
@@ -77,7 +83,7 @@ export function MainNav() {
         {isOpen ? (
           <X className="h-6 w-6" />
         ) : (
-          <Menu className="h-6 w-6" />
+          <MenuIcon className="h-6 w-6" />
         )}
       </button>
 
@@ -96,8 +102,8 @@ export function MainNav() {
                 key={route.href}
                 href={route.href}
                 className={cn(
-                  "flex items-center space-x-2 border-b border-muted pb-2 text-base font-medium transition-colors hover:text-secondary",
-                  isActive ? "text-secondary font-bold underline underline-offset-4" : "text-foreground/80"
+                  "flex items-center gap-2 text-sm font-medium transition-colors hover:text-[#FFA726] hover:underline hover:underline-offset-4 focus:text-[#FFA726] focus:underline-offset-4 active:text-[#FFA726]",
+                  isActive ? "text-[#FFA726] font-bold " : "text-foreground/80"
                 )}
                 onClick={() => setIsOpen(false)}
               >

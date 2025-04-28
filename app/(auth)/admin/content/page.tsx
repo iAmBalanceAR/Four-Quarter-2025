@@ -81,7 +81,7 @@ export default function ContentAdminPage() {
       toast({
         title: "Error",
         description: "Failed to load page content. Please try again.",
-        variant: "destructive"
+        variant: "error"
       })
     } finally {
       setLoading(false)
@@ -114,7 +114,7 @@ export default function ContentAdminPage() {
       toast({
         title: "Error",
         description: "Failed to save changes. Please try again.",
-        variant: "destructive"
+        variant: "error"
       })
     } finally {
       setSaving(false)
@@ -167,7 +167,7 @@ export default function ContentAdminPage() {
       })
       toast({ title: 'Image Uploaded', description: 'Image uploaded successfully.' })
     } catch (error: any) {
-      toast({ title: 'Upload Error', description: error.message, variant: 'destructive' })
+      toast({ title: 'Upload Error', description: error.message, variant: 'error' })
     } finally {
       setUploading((prev) => ({ ...prev, [slot]: false }))
     }

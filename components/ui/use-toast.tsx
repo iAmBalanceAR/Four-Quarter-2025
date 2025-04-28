@@ -10,15 +10,14 @@ import type {
 const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToastType = "success" | "error" | "warning" | "info" | "default"
-
 export type ToastActionType = {
   id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
+  title?: string
+  description?: string
   action?: ToastActionElement
   variant?: "default" | "success" | "error" | "warning" | "info"
-  type?: ToastType
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const actionTypes = {
@@ -145,21 +144,14 @@ function dispatch(action: Action) {
 
 interface Toast extends Omit<ToastProps, "id"> {
   id?: string
-  title?: React.ReactNode
-  description?: React.ReactNode
+  title?: string
+  description?: string
   action?: ToastActionElement
   variant?: "default" | "success" | "error" | "warning" | "info"
-  type?: ToastType
 }
 
 export function toast(props: Toast) {
   const id = props.id || genId()
-
-  // Set the variant based on type if not explicitly specified
-  let variant = props.variant
-  if (!variant && props.type) {
-    variant = props.type as "default" | "success" | "error" | "warning" | "info"
-  }
 
   const update = (props: ToastActionType) =>
     dispatch({
@@ -173,7 +165,6 @@ export function toast(props: Toast) {
     toast: {
       ...props,
       id,
-      variant,
       open: true,
       onOpenChange: (open: boolean) => {
         if (!open) dismiss()
@@ -189,19 +180,19 @@ export function toast(props: Toast) {
 }
 
 toast.success = (props: Omit<Toast, "variant" | "type">) => {
-  return toast({ ...props, variant: "success", type: "success" })
+  return toast({ ...props, variant: "success" })
 }
 
 toast.error = (props: Omit<Toast, "variant" | "type">) => {
-  return toast({ ...props, variant: "error", type: "error" })
+  return toast({ ...props, variant: "error" })
 }
 
 toast.warning = (props: Omit<Toast, "variant" | "type">) => {
-  return toast({ ...props, variant: "warning", type: "warning" })
+  return toast({ ...props, variant: "warning" })
 }
 
 toast.info = (props: Omit<Toast, "variant" | "type">) => {
-  return toast({ ...props, variant: "info", type: "info" })
+  return toast({ ...props, variant: "info" })
 }
 
 export function useToast() {
